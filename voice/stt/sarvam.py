@@ -186,8 +186,33 @@ class SarvamSTTProvider(SpeechToTextProvider):
             "with_timestamps": "false",
         }
 
+        clean_mime = (mime_type or "audio/wav").split(";")[0].strip().lower()
+        clean_filename = filename or "recording.wav"
+        if "webm" in clean_mime:
+            clean_mime = "audio/webm"
+            if not clean_filename.endswith(".webm"):
+                clean_filename = "recording.webm"
+        elif "wav" in clean_mime:
+            clean_mime = "audio/wav"
+            if not clean_filename.endswith(".wav"):
+                clean_filename = "recording.wav"
+        elif "mp3" in clean_mime or "mpeg" in clean_mime:
+            clean_mime = "audio/mp3"
+            if not clean_filename.endswith(".mp3"):
+                clean_filename = "recording.mp3"
+        elif "ogg" in clean_mime:
+            clean_mime = "audio/ogg"
+            if not clean_filename.endswith(".ogg"):
+                clean_filename = "recording.ogg"
+        elif "flac" in clean_mime:
+            clean_mime = "audio/flac"
+            if not clean_filename.endswith(".flac"):
+                clean_filename = "recording.flac"
+        else:
+            clean_mime = "audio/wav"
+
         files = {
-            "file": (filename, audio_bytes, mime_type),
+            "file": (clean_filename, audio_bytes, clean_mime),
         }
 
         # Execute HTTP POST with exponential backoff for transient failures

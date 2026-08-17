@@ -212,61 +212,122 @@ class MockLLMProvider(LLMProvider):
     ) -> AnswerResponse:
         time.sleep(0.02)
 
-        # Extract chunk IDs and passage IDs from prompt
-        chunk_matches = re.findall(r"chunk_id:\s*([^\s\n]+)", prompt)
-        passage_matches = re.findall(r"source_passage_id:\s*([^\s\n]+)", prompt)
+        # Extract all context chunks from prompt
+        chunk_pattern = re.compile(
+            r"\[CONTEXT CHUNK\s*(\d+)\]\s*\n"
+            r"chunk_id:\s*([^\s\n]+)\s*\n"
+            r"source_passage_id:\s*([^\s\n]+)\s*\n"
+            r"(?:relevance_score:\s*[^\n]+\n)?"
+            r"text:\s*(.*?)(?=(?:\n\[CONTEXT CHUNK|\n=== RETRIEVED CONTEXT END|\Z))",
+            re.DOTALL,
+        )
+        chunk_blocks = chunk_pattern.findall(prompt)
 
-        if not chunk_matches:
-            return AnswerResponse(
-                answer="उपलब्ध स्रोतों में इस प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी नहीं है।",
-                language="hi",
-                grounded=False,
-                confidence=0.0,
-                citations=[],
-                abstained=True,
-                abstention_reason="INSUFFICIENT_CONTEXT",
-            )
-
-        top_chunk_id = chunk_matches[0]
-        top_passage_id = passage_matches[0] if passage_matches else "unknown"
+        if not chunk_blocks:
+            chunk_matches = re.findall(r"chunk_id:\s*([^\s\n]+)", prompt)
+            passage_matches = re.findall(r"source_passage_id:\s*([^\s\n]+)", prompt)
+            if chunk_matches:
+                chunk_blocks = [("1", chunk_matches[0], passage_matches[0] if passage_matches else "pass_1", prompt)]
+            else:
+                return AnswerResponse(
+                    answer="उपलब्ध स्रोतों में इस प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी नहीं है।",
+                    language="hi",
+                    grounded=False,
+                    confidence=0.0,
+                    citations=[],
+                    abstained=True,
+                    abstention_reason="INSUFFICIENT_CONTEXT",
+                )
 
         # Extract user query from prompt
         query_match = re.search(r'USER QUERY:\s*\n"([^"]+)"', prompt)
-        user_query = query_match.group(1) if query_match else prompt
+        user_query = query_match.group(1).strip() if query_match else prompt.strip()
 
-        # Detect language using existing linguistic analyzer
+        # Linguistic analysis
         from retrieval.query.analyze import analyze_query
         analysis = analyze_query(user_query)
         lang = analysis.language
 
-        # Extract direct snippet from top context chunk
-        text_match = re.search(r"\[CONTEXT CHUNK 1\].*?text:\s*(.*?)(?:\n\[CONTEXT CHUNK|\n=== RETRIEVED CONTEXT END)", prompt, re.DOTALL)
-        if text_match:
-            chunk_text = text_match.group(1).strip()
-            sentences = [s.strip() for s in re.split(r"[।\.\?\!\n]+", chunk_text) if len(s.strip()) > 5]
-            if sentences:
-                answer_text = sentences[0] + "।"
-                snippet = sentences[0]
-            else:
-                answer_text = chunk_text[:120]
-                snippet = chunk_text[:100]
+        # Extract query tokens (length >= 2, excluding very common stop words)
+        query_tokens = [
+            t.lower() for t in re.findall(r"[\w\u0900-\u0D7F]+", user_query.lower())
+            if len(t) >= 2 and t not in {
+                "what", "is", "the", "of", "in", "and", "a", "an", "to", "for", "are", "how", "who", "which",
+                "क्या", "है", "हैं", "का", "के", "की", "में", "से", "पर", "और", "को", "यह", "वह", "कहाँ", "कौन"
+            }
+        ]
+
+        best_score = -1.0
+        best_sentence = ""
+        best_snippet = ""
+        best_chunk_id = chunk_blocks[0][1]
+        best_passage_id = chunk_blocks[0][2]
+
+        for idx, chunk_id, passage_id, text in chunk_blocks:
+            chunk_text = text.strip()
+            # Split into individual sentences
+            sentences = [s.strip() for s in re.split(r"[।\.\?\!\n]+", chunk_text) if len(s.strip()) > 8]
+            for s in sentences:
+                s_lower = s.lower()
+                # Score based on token overlap
+                score = sum(1.0 for qt in query_tokens if qt in s_lower)
+                if query_tokens and score > 0:
+                    score = score / len(query_tokens)
+                if score > best_score:
+                    best_score = score
+                    best_sentence = s
+                    best_snippet = s[:120]
+                    best_chunk_id = chunk_id
+                    best_passage_id = passage_id
+
+        # If we found a relevant sentence with keyword match
+        if best_sentence and best_score > 0.05:
+            answer_text = best_sentence
+            grounded = True
+            confidence = min(0.98, max(0.85, 0.7 + best_score * 0.3))
+            abstained = False
+            abstention_reason = None
         else:
-            answer_text = "उपलब्ध स्रोतों के अनुसार, यह जानकारी प्रमाणित है।"
-            snippet = "उपलब्ध स्रोतों के अनुसार प्रमाणित।"
+            # Fallback to top chunk's first sentence
+            top_chunk_text = chunk_blocks[0][3].strip()
+            top_sentences = [s.strip() for s in re.split(r"[।\.\?\!\n]+", top_chunk_text) if len(s.strip()) > 5]
+            if top_sentences:
+                best_sentence = top_sentences[0]
+                best_snippet = top_sentences[0][:120]
+                best_chunk_id = chunk_blocks[0][1]
+                best_passage_id = chunk_blocks[0][2]
+                answer_text = best_sentence
+                grounded = True
+                confidence = 0.85
+                abstained = False
+                abstention_reason = None
+            else:
+                answer_text = top_chunk_text[:120]
+                best_snippet = top_chunk_text[:100]
+                best_chunk_id = chunk_blocks[0][1]
+                best_passage_id = chunk_blocks[0][2]
+                grounded = True
+                confidence = 0.75
+                abstained = False
+                abstention_reason = None
+
+        citations = []
+        if grounded and best_chunk_id:
+            citations.append(
+                Citation(
+                    chunk_id=best_chunk_id,
+                    source_passage_id=best_passage_id,
+                    relevance_score=round(confidence, 3),
+                    snippet=best_snippet,
+                )
+            )
 
         return AnswerResponse(
             answer=answer_text,
             language=lang,
-            grounded=True,
-            confidence=0.95,
-            citations=[
-                Citation(
-                    chunk_id=top_chunk_id,
-                    source_passage_id=top_passage_id,
-                    relevance_score=0.95,
-                    snippet=snippet,
-                )
-            ],
-            abstained=False,
-            abstention_reason=None,
+            grounded=grounded,
+            confidence=confidence,
+            citations=citations,
+            abstained=abstained,
+            abstention_reason=abstention_reason,
         )
