@@ -15,7 +15,7 @@ class ContextGuardrail:
         self,
         max_chunks: int = 5,
         max_context_chars: int = 8000,
-        relevance_threshold: float = 0.01,
+        relevance_threshold: float = 0.0001,
     ):
         self.max_chunks = max_chunks
         self.max_context_chars = max_context_chars
