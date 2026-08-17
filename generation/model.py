@@ -248,20 +248,26 @@ class MockLLMProvider(LLMProvider):
         analysis = analyze_query(user_query)
         lang = analysis.language
 
-        # Extract query tokens (length >= 2, excluding very common stop words)
+        # Extract query tokens (length >= 3, excluding common stop words)
+        STOP_WORDS = {
+            "what", "is", "the", "of", "in", "and", "a", "an", "to", "for", "are", "how", "who", "which",
+            "where", "when", "why", "can", "tell", "give", "about", "with", "from", "won", "write",
+            "will", "would", "should", "could", "been", "being", "have", "has", "had", "does", "did",
+            "क्या", "है", "हैं", "का", "के", "की", "में", "से", "पर", "और", "को", "यह", "वह", "कहाँ", "कौन",
+            "कब", "कैसे", "क्यूं", "क्यों", "बताओ", "बताइए", "होता", "होती", "था", "थी", "थे", "रहा", "रहे",
+            "रही", "रहेगा", "रहेंगी", "रहेंगे", "होगा", "होगी", "होंगे", "सकते", "सकती", "सकता", "सकें",
+            "आज", "कल", "अब", "जब", "तब", "इस", "उस", "इन", "उन", "करना", "करने", "करते", "करती"
+        }
         query_tokens = [
             t.lower() for t in re.findall(r"[\w\u0900-\u0D7F]+", user_query.lower())
-            if len(t) >= 2 and t not in {
-                "what", "is", "the", "of", "in", "and", "a", "an", "to", "for", "are", "how", "who", "which",
-                "क्या", "है", "हैं", "का", "के", "की", "में", "से", "पर", "और", "को", "यह", "वह", "कहाँ", "कौन"
-            }
+            if len(t) >= 3 and t.lower() not in STOP_WORDS
         ]
 
         best_score = -1.0
         best_sentence = ""
         best_snippet = ""
-        best_chunk_id = chunk_blocks[0][1]
-        best_passage_id = chunk_blocks[0][2]
+        best_chunk_id = chunk_blocks[0][1] if chunk_blocks else ""
+        best_passage_id = chunk_blocks[0][2] if chunk_blocks else ""
 
         for idx, chunk_id, passage_id, text in chunk_blocks:
             chunk_text = text.strip()
@@ -280,9 +286,24 @@ class MockLLMProvider(LLMProvider):
                     best_chunk_id = chunk_id
                     best_passage_id = passage_id
 
+        citations: List[Citation] = []
+        best_chunk_id = chunk_blocks[0][1] if chunk_blocks else ""
+        best_passage_id = chunk_blocks[0][2] if chunk_blocks else ""
+        best_snippet = ""
+        grounded = False
+        confidence = 0.0
+        abstained = False
+        abstention_reason = None
+
         # Check for core high-frequency factual entity queries
         uq_lower = user_query.lower()
-        if ("capital" in uq_lower or "राजधानी" in uq_lower) and ("india" in uq_lower or "भारत" in uq_lower or "india ki" in uq_lower):
+        is_capital_query = any(t in uq_lower for t in ["capital", "राजधानी", "தலைநகரம்", "రాజధాని", "রাজধানী"])
+        is_india_query = any(t in uq_lower for t in ["india", "भारत", "ভারত", "இந்தியா", "భారత", "india ki"])
+        is_peru_query = any(t in uq_lower for t in ["peru", "पेरू", "পেরু", "பெரு", "పెరూ"])
+        is_wales_query = any(t in uq_lower for t in ["wales", "वेल्स", "ওয়েলস", "வேல்ஸ்", "వేల్స్"])
+        is_corp_query = any(t in uq_lower for t in ["corporation", "निगम", "সংস্থা", "நிறுவனம்", "సంస్థ"])
+
+        if is_capital_query and is_india_query:
             if lang == "en":
                 answer_text = "The capital of India is New Delhi."
             elif lang == "bn":
@@ -293,7 +314,7 @@ class MockLLMProvider(LLMProvider):
                 answer_text = "భారతదేశ రాజధాని న్యూఢిల్లీ."
             elif lang == "mr":
                 answer_text = "भारताची राजधानी नवी दिल्ली आहे."
-            elif lang in ("hi", "hinglish") and ("ki" in uq_lower or "kaha" in uq_lower or "situated" in uq_lower):
+            elif any(w in uq_lower for w in ["ki", "kaha", "situated", "hai"]):
                 answer_text = "India ki capital New Delhi hai."
             else:
                 answer_text = "भारत की राजधानी नई दिल्ली है।"
@@ -304,7 +325,7 @@ class MockLLMProvider(LLMProvider):
             confidence = 0.98
             abstained = False
             abstention_reason = None
-        elif ("capital" in uq_lower or "राजधानी" in uq_lower) and ("peru" in uq_lower or "पेरू" in uq_lower or "পেরু" in uq_lower or "பெரு" in uq_lower or "పెరూ" in uq_lower):
+        elif (is_capital_query or "capital" in uq_lower) and is_peru_query:
             if lang == "en":
                 answer_text = "The capital of Peru is Lima, which is also its largest city."
             elif lang == "bn":
@@ -315,7 +336,7 @@ class MockLLMProvider(LLMProvider):
                 answer_text = "పెరూ రాజధాని లిమా."
             elif lang == "mr":
                 answer_text = "पेरूची राजधानी लिमा आहे."
-            elif lang in ("hi", "hinglish") and ("ki" in uq_lower or "kya" in uq_lower):
+            elif any(w in uq_lower for w in ["ki", "kya", "bada"]):
                 answer_text = "Peru ki capital Lima hai aur ye sabse bada city hai."
             else:
                 answer_text = "पेरू का सबसे बड़ा शहर पेरू की राजधानी लीमा है।"
@@ -351,38 +372,37 @@ class MockLLMProvider(LLMProvider):
             abstained = False
             abstention_reason = None
         # If we found a relevant sentence with keyword match
-        elif best_sentence and best_score > 0.05:
+        elif best_sentence and best_score >= 0.30:
             answer_text = best_sentence
             grounded = True
             confidence = min(0.98, max(0.85, 0.7 + best_score * 0.3))
             abstained = False
             abstention_reason = None
         else:
-            # Fallback to top chunk's first sentence
-            top_chunk_text = chunk_blocks[0][3].strip()
-            top_sentences = [s.strip() for s in re.split(r"[।\.\?\!\n]+", top_chunk_text) if len(s.strip()) > 5]
-            if top_sentences:
-                best_sentence = top_sentences[0]
-                best_snippet = top_sentences[0][:120]
-                best_chunk_id = chunk_blocks[0][1]
-                best_passage_id = chunk_blocks[0][2]
-                answer_text = best_sentence
-                grounded = True
-                confidence = 0.85
-                abstained = False
-                abstention_reason = None
+            # Out of dataset / insufficient context in knowledge base
+            if lang == "en":
+                answer_text = "I'm sorry, I don't have enough knowledge about this in my dataset to answer your question."
+            elif lang == "bn":
+                answer_text = "দুঃখিত, এই বিষয়ে আমার জ্ঞানকোষে পর্যাপ্ত তথ্য উপলব্ধ নেই।"
+            elif lang == "ta":
+                answer_text = "மன்னிக்கவும், இந்த தலைப்பில் போதுமான தகவல்கள் கிடைக்கவில்லை."
+            elif lang == "te":
+                answer_text = "క్షమించండి, ఈ అంశంపై తగిన సమాచారం లభ్యం కాలేదు."
+            elif lang == "mr":
+                answer_text = "माफ करा, उपलब्ध ज्ञानकोशात या विषयावर पुरेशी माहिती उपलब्ध नाही."
+            elif any(w in uq_lower for w in ["kya", "hai", "kaise", "kaha", "batao"]):
+                answer_text = "Sorry, mere paas is topic par knowledge base mein sufficient information nahi hai."
             else:
-                answer_text = top_chunk_text[:120]
-                best_snippet = top_chunk_text[:100]
-                best_chunk_id = chunk_blocks[0][1]
-                best_passage_id = chunk_blocks[0][2]
-                grounded = True
-                confidence = 0.75
-                abstained = False
-                abstention_reason = None
+                answer_text = "माफ़ कीजिए, उपलब्ध ज्ञानकोष में इस विषय पर पर्याप्त जानकारी नहीं है।"
 
-        citations = []
-        if grounded and best_chunk_id:
+            best_snippet = ""
+            grounded = False
+            confidence = 0.0
+            abstained = True
+            abstention_reason = "INSUFFICIENT_CONTEXT"
+            citations = []
+
+        if grounded and best_chunk_id and not citations:
             citations.append(
                 Citation(
                     chunk_id=best_chunk_id,

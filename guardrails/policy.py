@@ -83,31 +83,41 @@ class GuardrailPolicy:
         )
 
     @staticmethod
-    def get_abstention_text(reason: AbstentionReason, language: str = "hi") -> str:
-        """Returns natural, helpful abstention messages in user's query language."""
-        if language in ["hi", "hi-IN", "hindi"]:
+    def get_abstention_text(reason: AbstentionReason, language: str = "en") -> str:
+        """Returns polite, natural, helpful abstention messages in user's query language."""
+        lang = (language or "en").lower().strip()
+        if lang in ["hi", "hi-in", "hindi"]:
             templates = {
-                AbstentionReason.EMPTY_QUERY: "कृपया अपना प्रश्न दर्ज करें या बोलें।",
-                AbstentionReason.QUERY_TOO_LONG: "आपका प्रश्न बहुत लंबा है। कृपया इसे संक्षिप्त करके पुनः पूछें।",
+                AbstentionReason.EMPTY_QUERY: "कृपया अपना प्रश्न बोलें या टाइप करें।",
+                AbstentionReason.QUERY_TOO_LONG: "आपका प्रश्न बहुत लंबा है। कृपया इसे थोड़ा संक्षिप्त करके पुनः पूछें।",
                 AbstentionReason.PROMPT_INJECTION: "असुरक्षित अथवा अमान्य निर्देश का पता चला है।",
                 AbstentionReason.UNSAFE_CONTENT: "यह अनुरोध हमारी सुरक्षा नीति के अनुरूप नहीं है।",
-                AbstentionReason.INSUFFICIENT_CONTEXT: "उपलब्ध स्रोतों में इस प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी नहीं है।",
-                AbstentionReason.OFF_TOPIC: "यह प्रश्न उपलब्ध ज्ञानकोश के विषय से बाहर प्रतीत होता है।",
-                AbstentionReason.RETRIEVAL_FAILURE: "ज्ञानकोश से जानकारी प्राप्त करने में असमर्थ।",
-                AbstentionReason.GROUNDING_FAILURE: "स्रोतों के आधार पर इस प्रश्न का सटीक उत्तर सत्यापित नहीं किया जा सका।",
+                AbstentionReason.INSUFFICIENT_CONTEXT: "माफ़ कीजिए, उपलब्ध ज्ञानकोष में इस विषय पर पर्याप्त जानकारी नहीं है, इसलिए मैं इसका सटीक उत्तर नहीं दे सकता।",
+                AbstentionReason.OFF_TOPIC: "माफ़ कीजिए, यह प्रश्न उपलब्ध ज्ञानकोष के दायरे से बाहर है।",
+                AbstentionReason.RETRIEVAL_FAILURE: "क्षमा करें, ज्ञानकोष से जानकारी प्राप्त करने में असमर्थ।",
+                AbstentionReason.GROUNDING_FAILURE: "माफ़ कीजिए, स्रोतों के आधार पर इस प्रश्न का सटीक उत्तर सत्यापित नहीं किया जा सका।",
                 AbstentionReason.MALFORMED_CONTEXT: "स्रोतों का डेटा स्वरूप अमान्य है।",
             }
-            return templates.get(reason, "स्रोतों में पर्याप्त जानकारी उपलब्ध नहीं है।")
+            return templates.get(reason, "माफ़ कीजिए, उपलब्ध ज्ञानकोष में इस विषय पर पर्याप्त जानकारी नहीं है।")
+        elif lang in ["bn", "bn-in", "bengali"]:
+            return "দুঃখিত, এই বিষয়ে আমার জ্ঞানকোষে পর্যাপ্ত তথ্য উপলব্ধ নেই।"
+        elif lang in ["ta", "ta-in", "tamil"]:
+            return "மன்னிக்கவும், இந்த தலைப்பில் போதுமான தகவல்கள் கிடைக்கவில்லை."
+        elif lang in ["te", "te-in", "telugu"]:
+            return "క్షమించండి, ఈ అంశంపై తగిన సమాచారం లభ్యం కాలేదు."
+        elif lang in ["mr", "mr-in", "marathi"]:
+            return "माफ करा, उपलब्ध ज्ञानकोशात या विषयावर पुरेशी माहिती उपलब्ध नाही."
         else:
+            # Default to polite English
             templates = {
-                AbstentionReason.EMPTY_QUERY: "Please enter or speak a valid query.",
-                AbstentionReason.QUERY_TOO_LONG: "Your query is too long. Please shorten it and try again.",
+                AbstentionReason.EMPTY_QUERY: "Please speak or type a question to get started.",
+                AbstentionReason.QUERY_TOO_LONG: "Your question is too long. Please shorten it and try again.",
                 AbstentionReason.PROMPT_INJECTION: "Unauthorized system instruction override detected.",
                 AbstentionReason.UNSAFE_CONTENT: "This query violates our safety policies.",
-                AbstentionReason.INSUFFICIENT_CONTEXT: "I do not have enough relevant information in the provided sources to answer that.",
-                AbstentionReason.OFF_TOPIC: "This query appears outside the scope of the available knowledge base.",
-                AbstentionReason.RETRIEVAL_FAILURE: "Unable to retrieve information from knowledge base.",
-                AbstentionReason.GROUNDING_FAILURE: "Unable to verify a factual answer from the retrieved sources.",
-                AbstentionReason.MALFORMED_CONTEXT: "Retrieved source format is invalid.",
+                AbstentionReason.INSUFFICIENT_CONTEXT: "I'm sorry, I don't have enough knowledge about this in my dataset to answer your question.",
+                AbstentionReason.OFF_TOPIC: "I'm sorry, but this topic appears to be outside the scope of my current knowledge base.",
+                AbstentionReason.RETRIEVAL_FAILURE: "I'm sorry, I was unable to retrieve information from the knowledge base.",
+                AbstentionReason.GROUNDING_FAILURE: "I'm sorry, I could not verify a factual answer for this question from the available sources.",
+                AbstentionReason.MALFORMED_CONTEXT: "The retrieved source format is invalid.",
             }
-            return templates.get(reason, "Insufficient relevant information in provided sources.")
+            return templates.get(reason, "I'm sorry, I don't have enough knowledge about this in my dataset to answer your question.")

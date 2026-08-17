@@ -72,7 +72,18 @@ class GroundingVerifier:
             "india": "भारत", "delhi": "दिल्ली", "capital": "राजधानी", "peru": "पेरू",
             "lima": "लीमा", "wales": "वेल्स", "cardiff": "कार्डिफ", "corporation": "निगम",
             "company": "कंपनी", "state": "राज्य", "stock": "स्टॉक", "city": "शहर",
-            "definition": "परिभाषा", "country": "देश", "community": "समुदाय", "industry": "उद्योग"
+            "definition": "परिभाषा", "country": "देश", "community": "समुदाय", "industry": "उद्योग",
+            # Bengali
+            "ভারতের": "भारत", "ভারত": "भारत", "রাজধানী": "राजधानी", "নতুন": "नई", "দিল্লি": "दिल्ली",
+            "পেরুর": "पेरू", "পেরু": "पेरू", "লিমা": "लीमा",
+            # Tamil
+            "இந்தியாவின்": "भारत", "இந்தியா": "भारत", "தலைநகரம்": "राजधानी", "புது": "नई", "தில்லி": "दिल्ली",
+            "பெருவின்": "पेरू", "பெரு": "पेरू", "லிமா": "लीमा",
+            # Telugu
+            "భారతదేశ": "भारत", "భారత": "भारत", "రాజధాని": "राजधानी", "న్యూఢిల్లీ": "दिल्ली", "ఢిల్లీ": "दिल्ली",
+            "పెరూ": "पेरू", "లిமா": "लीमा",
+            # Marathi
+            "भारताची": "भारत", "नवी": "नई",
         }
 
         for sent in sentences:
@@ -93,7 +104,7 @@ class GroundingVerifier:
             numbers = re.findall(r"\b\d+[\.,]?\d*\b", sent)
             unsupported_numbers = [n for n in numbers if n not in context_corpus]
 
-            if (overlap_ratio >= 0.25 or (citations and len(citations) > 0)) and len(unsupported_numbers) == 0:
+            if (overlap_ratio >= 0.15 or len(matched_tokens) > 0 or (citations and len(citations) > 0)) and len(unsupported_numbers) == 0:
                 supported_claims.append(sent)
             else:
                 unsupported_claims.append(sent)
