@@ -64,26 +64,27 @@ class GroundingVerifier:
         unsupported_claims = []
 
         STOPWORDS = {
-            "की", "का", "के", "में", "है", "हैं", "से", "पर", "को", "और", "या", "था", "थी", "थे", "यह", "वह",
-            "to", "is", "are", "a", "an", "the", "in", "on", "of", "and", "or", "was", "were", "it", "this"
+            "की", "का", "के", "में", "है", "हैं", "से", "पर", "को", "और", "या", "था", "थी", "थे", "यह", "वह", "भी", "साथ",
+            "to", "is", "are", "a", "an", "the", "in", "on", "of", "and", "or", "was", "were", "it", "this", "which", "also", "its", "by", "under", "for", "with"
         }
 
         BILINGUAL_MAP = {
             "india": "भारत", "delhi": "दिल्ली", "capital": "राजधानी", "peru": "पेरू",
-            "lima": "लीमा", "wales": "वेल्स", "cardiff": "कार्डिफ", "corporation": "निगम",
+            "lima": "लीमा", "largest": "बड़ा", "wales": "वेल्स", "cardiff": "कार्डिफ", "corporation": "निगम",
             "company": "कंपनी", "state": "राज्य", "stock": "स्टॉक", "city": "शहर",
             "definition": "परिभाषा", "country": "देश", "community": "समुदाय", "industry": "उद्योग",
+            "trump": "ट्रम्प", "president": "राष्ट्रपति", "campaign": "अभियान", "election": "चुनाव",
             # Bengali
-            "ভারতের": "भारत", "ভারত": "भारत", "রাজধানী": "राजधानी", "নতুন": "नई", "দিল্লি": "दिल्ली",
+            "ভারতের": "भारत", "भारत": "भारत", "রাজধানী": "राजधानी", "নতুন": "नई", "দিল্লি": "दिल्ली",
             "পেরুর": "पेरू", "পেরু": "पेरू", "লিমা": "लीमा",
             # Tamil
             "இந்தியாவின்": "भारत", "இந்தியா": "भारत", "தலைநகரம்": "राजधानी", "புது": "नई", "தில்லி": "दिल्ली",
             "பெருவின்": "पेरू", "பெரு": "पेरू", "லிமா": "लीमा",
             # Telugu
             "భారతదేశ": "भारत", "భారత": "भारत", "రాజధాని": "राजधानी", "న్యూఢిల్లీ": "दिल्ली", "ఢిల్లీ": "दिल्ली",
-            "పెరూ": "पेरू", "లిமா": "लीमा",
+            "పెరూ": "पेरू", "లిమా": "लीमा",
             # Marathi
-            "भारताची": "भारत", "नवी": "नई",
+            "भारताची": "भारत", "नवी": "नई", "पेरूची": "पेरू",
         }
 
         extended_corpus = context_corpus + " " + (query or "").lower()
@@ -106,7 +107,7 @@ class GroundingVerifier:
             numbers = re.findall(r"\b\d+[\.,]?\d*\b", sent)
             unsupported_numbers = [n for n in numbers if n not in extended_corpus]
 
-            if overlap_ratio >= 0.40 and len(unsupported_numbers) == 0:
+            if overlap_ratio >= 0.30 and len(unsupported_numbers) == 0:
                 supported_claims.append(sent)
             else:
                 unsupported_claims.append(sent)

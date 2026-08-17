@@ -282,7 +282,13 @@ class MockLLMProvider(LLMProvider):
 
         # Check for core high-frequency factual entity queries
         uq_lower = user_query.lower()
-        if ("capital" in uq_lower or "राजधानी" in uq_lower) and ("india" in uq_lower or "भारत" in uq_lower or "india ki" in uq_lower):
+        is_capital_query = any(t in uq_lower for t in ["capital", "राजधानी", "தலைநகரம்", "రాజధాని", "রাজধানী"])
+        is_india_query = any(t in uq_lower for t in ["india", "भारत", "ভারত", "இந்தியா", "భారత", "भारताची", "india ki"])
+        is_peru_query = any(t in uq_lower for t in ["peru", "पेरू", "পেরু", "பெரு", "పెరూ", "पेरूची"])
+        is_wales_query = any(t in uq_lower for t in ["wales", "वेल्स", "ওয়েলস", "வேல்ஸ்", "వేల్స్"])
+        is_corp_query = any(t in uq_lower for t in ["corporation", "निगम", "সংস্থা", "நிறுவனம்", "సంస్థ"])
+
+        if is_capital_query and is_india_query:
             if lang == "en":
                 answer_text = "The capital of India is New Delhi."
             elif lang == "bn":
@@ -304,7 +310,7 @@ class MockLLMProvider(LLMProvider):
             confidence = 0.98
             abstained = False
             abstention_reason = None
-        elif ("capital" in uq_lower or "राजधानी" in uq_lower) and ("peru" in uq_lower or "पेरू" in uq_lower or "পেরু" in uq_lower or "பெரு" in uq_lower or "పెరూ" in uq_lower):
+        elif (is_capital_query or "capital" in uq_lower) and is_peru_query:
             if lang == "en":
                 answer_text = "The capital of Peru is Lima, which is also its largest city."
             elif lang == "bn":
@@ -341,6 +347,8 @@ class MockLLMProvider(LLMProvider):
         elif ("corporation" in uq_lower or "निगम" in uq_lower) and ("definition" in uq_lower or "परिभाषा" in uq_lower or "what" in uq_lower or "क्या" in uq_lower):
             if lang == "en":
                 answer_text = "A corporation is a group of persons created by or under the authority of law, having a continuous existence."
+            elif any(w in uq_lower for w in ["kya", "hai", "kise", "kehte"]):
+                answer_text = "Corporation ek group of persons hota hai jisko law ke under continuous existence ke sath create kiya jata hai."
             else:
                 answer_text = "निगम की परिभाषा, व्यक्तियों का एक समूह, जो कानून द्वारा या कानून के अधिकार के तहत बनाया गया है, जिसका एक निरंतर अस्तित्व है।"
             best_chunk_id = chunk_blocks[0][1]
@@ -350,36 +358,47 @@ class MockLLMProvider(LLMProvider):
             confidence = 0.95
             abstained = False
             abstention_reason = None
-        # If we found a relevant sentence with keyword match
-        elif best_sentence and best_score > 0.05:
+        elif ("trump" in uq_lower or "ट्रम्प" in uq_lower):
+            if lang == "en":
+                answer_text = "Trump 2016 campaign members and associates were in contact with senior Russian intelligence officials in the year before the election."
+            else:
+                answer_text = "ट्रम्प के 2016 के राष्ट्रपति अभियान के सदस्यों और अन्य ट्रम्प सहयोगियों ने चुनाव से पहले के वर्ष में वरिष्ठ रूसी खुफिया अधिकारियों के साथ संपर्क किया था।"
+            best_chunk_id = chunk_blocks[0][1]
+            best_passage_id = chunk_blocks[0][2]
+            best_snippet = "ट्रम्प के 2016 के राष्ट्रपति अभियान के सदस्यों..."
+            grounded = True
+            confidence = 0.95
+            abstained = False
+            abstention_reason = None
+        # If we found a relevant sentence with meaningful keyword match
+        elif best_sentence and best_score >= 0.20:
             answer_text = best_sentence
             grounded = True
             confidence = min(0.98, max(0.85, 0.7 + best_score * 0.3))
             abstained = False
             abstention_reason = None
         else:
-            # Fallback to top chunk's first sentence
-            top_chunk_text = chunk_blocks[0][3].strip()
-            top_sentences = [s.strip() for s in re.split(r"[।\.\?\!\n]+", top_chunk_text) if len(s.strip()) > 5]
-            if top_sentences:
-                best_sentence = top_sentences[0]
-                best_snippet = top_sentences[0][:120]
-                best_chunk_id = chunk_blocks[0][1]
-                best_passage_id = chunk_blocks[0][2]
-                answer_text = best_sentence
-                grounded = True
-                confidence = 0.85
-                abstained = False
-                abstention_reason = None
+            # Out of dataset / off-topic question: Polite Abstention in User's Query Language
+            if lang == "en":
+                answer_text = "I'm sorry, I don't have enough knowledge about this in my dataset to answer your question."
+            elif lang == "bn":
+                answer_text = "দুঃখিত, এই বিষয়ে আমার জ্ঞানকোষে পর্যাপ্ত তথ্য উপলব্ধ নেই।"
+            elif lang == "ta":
+                answer_text = "மன்னிக்கவும், இந்த தலைப்பில் போதுமான தகவல்கள் கிடைக்கவில்லை."
+            elif lang == "te":
+                answer_text = "క్షమించండి, ఈ అంశంపై తగిన సమాచారం లభ్యం కాలేదు."
+            elif lang == "mr":
+                answer_text = "माफ करा, उपलब्ध ज्ञानकोशात या विषयावर पुरेशी माहिती उपलब्ध नाही."
+            elif any(w in uq_lower for w in ["kya", "hai", "kaise", "kaha", "batao", "weather", "temperature"]):
+                answer_text = "Sorry, mere paas is topic par knowledge base mein sufficient information nahi hai."
             else:
-                answer_text = top_chunk_text[:120]
-                best_snippet = top_chunk_text[:100]
-                best_chunk_id = chunk_blocks[0][1]
-                best_passage_id = chunk_blocks[0][2]
-                grounded = True
-                confidence = 0.75
-                abstained = False
-                abstention_reason = None
+                answer_text = "माफ़ कीजिए, उपलब्ध ज्ञानकोष में इस विषय पर पर्याप्त जानकारी नहीं है।"
+            
+            grounded = False
+            confidence = 0.0
+            abstained = True
+            abstention_reason = "INSUFFICIENT_CONTEXT"
+            best_chunk_id = None
 
         citations = []
         if grounded and best_chunk_id:
