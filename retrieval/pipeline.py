@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from retrieval.query.normalize import normalize_query
 from retrieval.query.analyze import analyze_query, QueryAnalysis
 from retrieval.dense.retriever import DenseRetriever
-from retrieval.lexical.bm25 import BM25Retriever
+from retrieval.lexical.bm25 import BM25Retriever, get_bm25_retriever
 from retrieval.hybrid import HybridRetriever
 from retrieval.reranking.reranker import RerankerService
 from retrieval.reranking.model import MultilingualCrossEncoderReranker
@@ -28,7 +28,7 @@ class RetrievalPipeline:
     ):
         self.strategy = strategy
         self.dense_retriever = dense_retriever or DenseRetriever(strategy=strategy)
-        self.bm25_retriever = bm25_retriever or BM25Retriever(strategy=strategy)
+        self.bm25_retriever = bm25_retriever or get_bm25_retriever(strategy=strategy)
         self.hybrid_retriever = HybridRetriever(
             strategy=strategy,
             dense_retriever=self.dense_retriever,
@@ -40,13 +40,13 @@ class RetrievalPipeline:
         self,
         query: str,
         strategy: Optional[str] = None,
-        dense_k: int = 20,
-        bm25_k: int = 20,
-        hybrid_k: int = 20,
+        dense_k: int = 15,
+        bm25_k: int = 15,
+        hybrid_k: int = 15,
         rerank_top_k: int = 8,
         rrf_k: int = 60,
         enable_reranking: bool = True,
-        parallel: bool = False,
+        parallel: bool = True,
     ) -> Dict[str, Any]:
         """
         Execute full retrieval and reranking pipeline with end-to-end timing.
@@ -82,9 +82,9 @@ class RetrievalPipeline:
         fused_candidates = hybrid_out["fused_candidates"]
         hybrid_lats = hybrid_out["latencies"]
 
-        # 4. Reranking (top 8 candidates from RRF for sub-50ms CPU inference)
+        # 4. Reranking (top 5 candidates from RRF for sub-80ms CPU inference)
         if enable_reranking and fused_candidates:
-            rerank_candidates_pool = fused_candidates[:8]
+            rerank_candidates_pool = fused_candidates[:5]
             rerank_out = self.reranker_service.rerank_candidates(
                 query=normalized,
                 candidates=rerank_candidates_pool,

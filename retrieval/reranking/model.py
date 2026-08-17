@@ -47,6 +47,13 @@ class CrossEncoderReranker(BaseReranker):
         else:
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        if self._device == "cpu":
+            import os
+            try:
+                torch.set_num_threads(min(8, os.cpu_count() or 4))
+            except Exception:
+                pass
+
         self.tokenizer: Optional[AutoTokenizer] = None
         self.model: Optional[AutoModelForSequenceClassification] = None
         self.cache = (

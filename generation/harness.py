@@ -111,9 +111,9 @@ class RAGHarness:
         retrieval_out = self.retrieval_pipeline.retrieve(
             query=normalized_q,
             strategy=strategy,
-            dense_k=20,
-            bm25_k=20,
-            hybrid_k=20,
+            dense_k=15,
+            bm25_k=15,
+            hybrid_k=15,
             rerank_top_k=top_k,
             enable_reranking=enable_reranking,
             parallel=parallel,

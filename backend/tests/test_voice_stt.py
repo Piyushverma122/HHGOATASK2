@@ -197,12 +197,23 @@ class TestVoiceAPIEndpoints:
         wav_bytes = AudioPreprocessor.create_synthetic_wav(duration_seconds=1.5)
         files = {"file": ("audio.wav", wav_bytes, "audio/wav")}
         data = {"language": "hi-IN"}
-        resp = client.post("/api/v1/voice/transcribe", files=files, data=data)
-        assert resp.status_code == 200
-        json_data = resp.json()
-        assert json_data["success"] is True
-        assert "transcript" in json_data["data"]
-        assert "latency" in json_data["data"]
+        with patch(
+            "voice.stt.service.STTService.transcribe_audio_bytes",
+            return_value={
+                "transcript": "भारत की राजधानी नई दिल्ली है।",
+                "language_code": "hi-IN",
+                "provider": "sarvam",
+                "model": "saaras:v3",
+                "duration_ms": 1500.0,
+                "latency": {"stt_ms": 15.0, "total_ms": 20.0},
+            },
+        ):
+            resp = client.post("/api/v1/voice/transcribe", files=files, data=data)
+            assert resp.status_code == 200
+            json_data = resp.json()
+            assert json_data["success"] is True
+            assert "transcript" in json_data["data"]
+            assert "latency" in json_data["data"]
 
     def test_voice_query_endpoint(self):
         wav_bytes = AudioPreprocessor.create_synthetic_wav(duration_seconds=1.5)

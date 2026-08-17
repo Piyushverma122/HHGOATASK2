@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Mic,
-  Search,
   Activity,
   Shield,
   RefreshCw,
@@ -10,7 +9,7 @@ import {
 } from 'lucide-react';
 import type { ApiStatus } from '../services/api';
 
-export type Route = '/' | '/voice' | '/retrieval' | '/guardrails' | '/analytics';
+export type Route = '/' | '/voice' | '/guardrails' | '/analytics';
 
 interface TopNavProps {
   currentRoute: Route;
@@ -32,7 +31,6 @@ export const TopNav: React.FC<TopNavProps> = ({
   const navItems: { route: Route; label: string; icon: React.ReactNode }[] = [
     { route: '/', label: 'Dashboard', icon: null },
     { route: '/voice', label: 'Voice Studio', icon: <Mic className="w-3.5 h-3.5" /> },
-    { route: '/retrieval', label: 'Retrieval', icon: <Search className="w-3.5 h-3.5" /> },
     { route: '/guardrails', label: 'Guardrails', icon: <Shield className="w-3.5 h-3.5" /> },
     { route: '/analytics', label: 'Latency', icon: <Activity className="w-3.5 h-3.5" /> },
   ];

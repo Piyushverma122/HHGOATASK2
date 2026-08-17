@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, Search, Sparkles } from 'lucide-react';
+import { Mic, Activity, Sparkles } from 'lucide-react';
 import type { Route } from './TopNav';
 
 interface HeroProps {
@@ -51,11 +51,11 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           <span>Launch Voice Studio</span>
         </button>
         <button
-          onClick={() => onNavigate('/retrieval')}
+          onClick={() => onNavigate('/analytics')}
           className="neo-btn-cyan px-8 py-3.5 rounded-xl font-sans font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer uppercase tracking-wider"
         >
-          <Search className="w-4 h-4" />
-          <span>Explore Retrieval</span>
+          <Activity className="w-4 h-4" />
+          <span>View Analytics</span>
         </button>
       </div>
     </section>

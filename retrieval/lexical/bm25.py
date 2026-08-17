@@ -232,3 +232,16 @@ class BM25Retriever:
             })
 
         return bm25_candidates
+
+
+# Singleton memory cache for BM25 retrievers per strategy
+_BM25_CACHE: Dict[str, BM25Retriever] = {}
+
+
+def get_bm25_retriever(strategy: str = "adaptive", index_dir: Optional[Path] = None) -> BM25Retriever:
+    """Return cached in-memory BM25 retriever instance."""
+    cache_key = f"{strategy}_{str(index_dir)}"
+    if cache_key not in _BM25_CACHE:
+        _BM25_CACHE[cache_key] = BM25Retriever(strategy=strategy, index_dir=index_dir)
+    return _BM25_CACHE[cache_key]
+
