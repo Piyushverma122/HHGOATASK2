@@ -15,6 +15,10 @@ from retrieval.embeddings.provider import get_default_embedder
 logger = logging.getLogger("voice_rag.retrieval.reranking")
 
 
+_SHARED_MODELS: Dict[str, Any] = {}
+_SHARED_TOKENIZERS: Dict[str, Any] = {}
+
+
 class CrossEncoderReranker(BaseReranker):
     """
     Genuine Multilingual Cross-Encoder Reranker using Pretrained Transformers.
@@ -54,15 +58,15 @@ class CrossEncoderReranker(BaseReranker):
             except Exception:
                 pass
 
-        self.tokenizer: Optional[AutoTokenizer] = None
-        self.model: Optional[AutoModelForSequenceClassification] = None
+        self.tokenizer: Optional[AutoTokenizer] = _SHARED_TOKENIZERS.get(model_name)
+        self.model: Optional[AutoModelForSequenceClassification] = _SHARED_MODELS.get(model_name)
         self.cache = (
             RerankerCache(db_path=cache_db_path, model_name=model_name, model_version=model_version)
             if use_cache
             else None
         )
 
-        if not lazy_load:
+        if not lazy_load or self.model is None:
             self.load()
 
     @property
@@ -81,16 +85,27 @@ class CrossEncoderReranker(BaseReranker):
         return self.model is not None and self.tokenizer is not None
 
     def load(self) -> None:
-        """Load tokenizer and model exactly once."""
-        if self.is_loaded():
+        """Load tokenizer and model exactly once across all instances."""
+        if self._model_name in _SHARED_MODELS and self._model_name in _SHARED_TOKENIZERS:
+            self.tokenizer = _SHARED_TOKENIZERS[self._model_name]
+            self.model = _SHARED_MODELS[self._model_name]
             return
 
         logger.info(f"Loading CrossEncoder model '{self._model_name}' on device '{self._device}'...")
-        self.tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(self._model_name)
-        self.model.to(self._device)
-        self.model.eval()
-        logger.info(f"CrossEncoder model '{self._model_name}' loaded successfully on {self._device}.")
+        try:
+            tok = AutoTokenizer.from_pretrained(self._model_name, local_files_only=True)
+            mod = AutoModelForSequenceClassification.from_pretrained(self._model_name, local_files_only=True)
+        except Exception:
+            tok = AutoTokenizer.from_pretrained(self._model_name)
+            mod = AutoModelForSequenceClassification.from_pretrained(self._model_name)
+
+        mod.to(self._device)
+        mod.eval()
+        _SHARED_TOKENIZERS[self._model_name] = tok
+        _SHARED_MODELS[self._model_name] = mod
+        self.tokenizer = tok
+        self.model = mod
+        logger.info(f"CrossEncoder model '{self._model_name}' loaded successfully in-memory on {self._device}.")
 
     def warmup(self) -> None:
         """Perform a single dummy inference for JIT / kernel warmup."""
