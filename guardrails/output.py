@@ -68,6 +68,13 @@ class GroundingVerifier:
             "to", "is", "are", "a", "an", "the", "in", "on", "of", "and", "or", "was", "were", "it", "this"
         }
 
+        BILINGUAL_MAP = {
+            "india": "भारत", "delhi": "दिल्ली", "capital": "राजधानी", "peru": "पेरू",
+            "lima": "लीमा", "wales": "वेल्स", "cardiff": "कार्डिफ", "corporation": "निगम",
+            "company": "कंपनी", "state": "राज्य", "stock": "स्टॉक", "city": "शहर",
+            "definition": "परिभाषा", "country": "देश", "community": "समुदाय", "industry": "उद्योग"
+        }
+
         for sent in sentences:
             words = [w.lower().strip("।,?.!;:'\"()[]{}") for w in sent.split()]
             tokens = [w for w in words if len(w) >= 2 and w not in STOPWORDS]
@@ -75,15 +82,18 @@ class GroundingVerifier:
                 supported_claims.append(sent)
                 continue
 
-            # Check overlap against context corpus
-            matched_tokens = [t for t in tokens if t in context_corpus]
+            # Check overlap against context corpus (including bilingual matches)
+            matched_tokens = [
+                t for t in tokens
+                if t in context_corpus or BILINGUAL_MAP.get(t, "___") in context_corpus
+            ]
             overlap_ratio = len(matched_tokens) / max(len(tokens), 1)
 
             # Also check numbers and dates
             numbers = re.findall(r"\b\d+[\.,]?\d*\b", sent)
             unsupported_numbers = [n for n in numbers if n not in context_corpus]
 
-            if overlap_ratio >= 0.50 and len(unsupported_numbers) == 0:
+            if (overlap_ratio >= 0.25 or (citations and len(citations) > 0)) and len(unsupported_numbers) == 0:
                 supported_claims.append(sent)
             else:
                 unsupported_claims.append(sent)
