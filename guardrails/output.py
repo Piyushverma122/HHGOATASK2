@@ -86,6 +86,8 @@ class GroundingVerifier:
             "भारताची": "भारत", "नवी": "नई",
         }
 
+        extended_corpus = context_corpus + " " + (query or "").lower()
+
         for sent in sentences:
             words = [w.lower().strip("।,?.!;:'\"()[]{}") for w in sent.split()]
             tokens = [w for w in words if len(w) >= 2 and w not in STOPWORDS]
@@ -96,15 +98,15 @@ class GroundingVerifier:
             # Check overlap against context corpus (including bilingual matches)
             matched_tokens = [
                 t for t in tokens
-                if t in context_corpus or BILINGUAL_MAP.get(t, "___") in context_corpus
+                if t in extended_corpus or BILINGUAL_MAP.get(t, "___") in extended_corpus
             ]
             overlap_ratio = len(matched_tokens) / max(len(tokens), 1)
 
             # Also check numbers and dates
             numbers = re.findall(r"\b\d+[\.,]?\d*\b", sent)
-            unsupported_numbers = [n for n in numbers if n not in context_corpus]
+            unsupported_numbers = [n for n in numbers if n not in extended_corpus]
 
-            if (overlap_ratio >= 0.15 or len(matched_tokens) > 0 or (citations and len(citations) > 0)) and len(unsupported_numbers) == 0:
+            if overlap_ratio >= 0.40 and len(unsupported_numbers) == 0:
                 supported_claims.append(sent)
             else:
                 unsupported_claims.append(sent)
