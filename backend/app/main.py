@@ -26,6 +26,13 @@ async def lifespan(app: FastAPI):
         f"Starting {settings.APP_NAME} v{settings.APP_VERSION} [{settings.ENVIRONMENT}]",
         extra={"environment": settings.ENVIRONMENT, "version": settings.APP_VERSION},
     )
+    try:
+        from generation.service import get_rag_harness
+        harness = get_rag_harness()
+        _ = harness.process_rag_query("warmup")
+        logger.info("Startup model and index pre-warming completed successfully.")
+    except Exception as e:
+        logger.warning(f"Startup model pre-warming skipped: {e}")
     yield
     # Shutdown
     logger.info(f"Shutting down {settings.APP_NAME}")

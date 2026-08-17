@@ -4,13 +4,14 @@ import { AppShell } from './components/AppShell';
 import type { Route } from './components/TopNav';
 import { DashboardView } from './components/DashboardView';
 import { VoiceStudioView } from './components/VoiceStudioView';
+import { RetrievalInspectorView } from './components/RetrievalInspectorView';
 import { GuardrailDemoView } from './components/GuardrailDemoView';
 import { AnalyticsView } from './components/AnalyticsView';
 
 export function App() {
   const [currentRoute, setCurrentRoute] = useState<Route>(() => {
     const path = window.location.pathname;
-    if (['/voice', '/guardrails', '/analytics'].includes(path)) {
+    if (['/voice', '/retrieval', '/guardrails', '/analytics'].includes(path)) {
       return path as Route;
     }
     return '/';
@@ -67,6 +68,7 @@ export function App() {
         />
       )}
       {currentRoute === '/voice' && <VoiceStudioView onBack={() => navigateTo('/')} />}
+      {currentRoute === '/retrieval' && <RetrievalInspectorView onBack={() => navigateTo('/')} />}
       {currentRoute === '/guardrails' && <GuardrailDemoView onBack={() => navigateTo('/')} />}
       {currentRoute === '/analytics' && <AnalyticsView onBack={() => navigateTo('/')} />}
     </AppShell>
