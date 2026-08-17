@@ -51,13 +51,13 @@ export const VoiceStudioView: React.FC<VoiceStudioViewProps> = ({ onBack }) => {
   const timerRef = useRef<number | null>(null);
 
   const demoFixtures = [
-    { lang: 'Hindi', code: 'hi-IN', native: 'हिन्दी', q: 'भारत की राजधानी क्या है और यह कहाँ स्थित है?', color: 'border-l-4 border-l-[#FEE101]' },
-    { lang: 'English', code: 'en-IN', native: 'English', q: 'What is the capital of India and where is the central government located?', color: 'border-l-4 border-l-[#06B6D4]' },
-    { lang: 'Hinglish', code: 'hi-IN', native: 'Hinglish', q: 'India ki capital kya hai aur ye kaha par situated hai?', color: 'border-l-4 border-l-[#FF0080]' },
-    { lang: 'Bengali', code: 'bn-IN', native: 'বাংলা', q: 'ভারতের রাজধানী কী এবং এটি কোথায় অবস্থিত?', color: 'border-l-4 border-l-[#00F59B]' },
-    { lang: 'Tamil', code: 'ta-IN', native: 'தமிழ்', q: 'இந்தியாவின் தலைநகரம் எது மற்றும் அரசு எங்கு அமைந்துள்ளது?', color: 'border-l-4 border-l-[#A855F7]' },
-    { lang: 'Telugu', code: 'te-IN', native: 'తెలుగు', q: 'భారతదేశ రాజధాని ఏది మరియు ప్రభుత్వం ఎక్కడ ఉంది?', color: 'border-l-4 border-l-[#F59E0B]' },
-    { lang: 'Marathi', code: 'mr-IN', native: 'मराठी', q: 'भारताची राजधानी कोणती आहे आणि सरकार कुठे स्थित आहे?', color: 'border-l-4 border-l-[#EC4899]' },
+    { lang: 'Hindi', code: 'hi-IN', native: 'हिन्दी', q: 'पेरू की राजधानी क्या है और सबसे बड़ा शहर कौन सा है?', color: 'border-l-4 border-l-[#FEE101]' },
+    { lang: 'English', code: 'en-IN', native: 'English', q: 'What is the capital city of Wales and its major cities?', color: 'border-l-4 border-l-[#06B6D4]' },
+    { lang: 'Hinglish', code: 'hi-IN', native: 'Hinglish', q: 'Peru ki capital kya hai aur sabse bada city konsa hai?', color: 'border-l-4 border-l-[#FF0080]' },
+    { lang: 'Bengali', code: 'bn-IN', native: 'বাংলা', q: 'পেরুর রাজধানী কী এবং প্রধান শহর কোনটি?', color: 'border-l-4 border-l-[#00F59B]' },
+    { lang: 'Tamil', code: 'ta-IN', native: 'தமிழ்', q: 'பெருவின் தலைநகரம் எது?', color: 'border-l-4 border-l-[#A855F7]' },
+    { lang: 'Telugu', code: 'te-IN', native: 'తెలుగు', q: 'పెరూ రాజధాని ఏది?', color: 'border-l-4 border-l-[#F59E0B]' },
+    { lang: 'Marathi', code: 'mr-IN', native: 'मराठी', q: 'पेरूची राजधानी कोणती आहे?', color: 'border-l-4 border-l-[#EC4899]' },
   ];
 
   useEffect(() => {
