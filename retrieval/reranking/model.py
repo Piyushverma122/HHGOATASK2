@@ -29,8 +29,8 @@ class CrossEncoderReranker(BaseReranker):
         model_name: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
         model_version: str = "v1.0",
         device: Optional[str] = None,
-        max_length: int = 256,
-        batch_size: int = 8,
+        max_length: int = 128,
+        batch_size: int = 16,
         use_cache: bool = True,
         cache_db_path: Optional[Path] = None,
         lazy_load: bool = True,
@@ -132,7 +132,7 @@ class CrossEncoderReranker(BaseReranker):
             )
             inputs = {k: v.to(self._device) for k, v in inputs.items()}
 
-            with torch.no_grad():
+            with torch.inference_mode():
                 outputs = self.model(**inputs)
                 logits = outputs.logits
 

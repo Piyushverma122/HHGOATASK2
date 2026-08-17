@@ -82,11 +82,12 @@ class RetrievalPipeline:
         fused_candidates = hybrid_out["fused_candidates"]
         hybrid_lats = hybrid_out["latencies"]
 
-        # 4. Reranking
+        # 4. Reranking (top 8 candidates from RRF for sub-50ms CPU inference)
         if enable_reranking and fused_candidates:
+            rerank_candidates_pool = fused_candidates[:8]
             rerank_out = self.reranker_service.rerank_candidates(
                 query=normalized,
-                candidates=fused_candidates,
+                candidates=rerank_candidates_pool,
                 top_k=rerank_top_k,
             )
             reranked_results = rerank_out["reranked_candidates"]
