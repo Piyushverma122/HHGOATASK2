@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#090D16] text-slate-100 antialiased min-h-screen selection:bg-[#FEE101] selection:text-black;
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif-claude {
+    font-family: 'Newsreader', Georgia, serif;
+  }
+
+  code, pre, .font-mono-neo {
+    font-family: 'Space Mono', 'JetBrains Mono', monospace;
+  }
+}
+
+/* Neo-Brutalist Utility Classes */
+.neo-box {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.neo-box-yellow {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #FEE101;
+}
+
+.neo-box-cyan {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #06B6D4;
+}
+
+.neo-box-pink {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #FF0080;
+}
+
+.neo-box-purple {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #8B5CF6;
+}
+
+.neo-box-green {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #10B981;
+}
+
+.neo-btn {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neo-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+.neo-btn-yellow {
+  background-color: #FEE101;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neo-btn-yellow:hover {
+  background-color: #FFE72E;
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
+.neo-btn-yellow:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+.neo-btn-cyan {
+  background-color: #06B6D4;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neo-btn-cyan:hover {
+  background-color: #22D3EE;
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
+.neo-btn-cyan:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
